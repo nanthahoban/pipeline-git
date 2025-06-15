@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                bat 'docker build -t myjava1 .'
+                bat 'docker tag myjava1 %DOCKER_BFLASK_IMAGE%'
+            }
+        }
+        stage('Test') {
+            steps {
+                bat 'docker run myjava1'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                withCredentials([string(credentialsId: 'dockerhub_token', variable: 'DOCKER_TOKEN')]) {
+                    bat 'echo %DOCKER_TOKEN% | docker login --username mydockeruser --password-stdin'
+                    bat 'docker push myimage'
+                }
+            }
+        }
+    }
+    post {
+        always {
+            bat 'docker logout'
+        }
+    }
+}
